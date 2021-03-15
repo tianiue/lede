@@ -7,7 +7,7 @@
 # <https://github.com/KFERMercer/OpenWrt-CI>
 #
 
-name: OpenWrt-Tian5.4
+name: OpenWrt-Tian4.19
 
 on:
   workflow_dispatch:
@@ -67,7 +67,7 @@ jobs:
           git clone https://github.com/vernesong/OpenClash.git
           # git clone https://github.com/frainzy1477/luci-app-clash.git
           git clone https://github.com/destan19/OpenAppFilter.git
-          git clone https://github.com/jerrykuku/luci-app-ttnode.git
+          # git clone https://github.com/jerrykuku/luci-app-ttnode.git
           git clone https://github.com/linkease/ddnsto-openwrt.git
           # git clone https://github.com/jerrykuku/luci-app-vssr.git
           # git clone https://github.com/jerrykuku/lua-maxminddb.git
@@ -178,18 +178,18 @@ jobs:
 
           # 常用LuCI插件选择:
           cat >> .config <<EOF
-          CONFIG_PACKAGE_netdata=y
-          CONFIG_PACKAGE_luci-app-netdata-zh=y
+          # CONFIG_PACKAGE_netdata=y
+          # CONFIG_PACKAGE_luci-app-netdata-zh=y
           CONFIG_PACKAGE_luci-app-webadmin=y
           CONFIG_PACKAGE_luci-app-ttyd=y
           CONFIG_PACKAGE_luci-app-diskman=y
           CONFIG_PACKAGE_luci-app-autoreboot=n
           CONFIG_PACKAGE_luci-app-autopoweroff=y
-          CONFIG_PACKAGE_luci-app-argon-config=y
+          # CONFIG_PACKAGE_luci-app-argon-config=y
           # CONFIG_PACKAGE_luci-app-vssr=y
           # CONFIG_PACKAGE_lua-maxminddb=y
           CONFIG_PACKAGE_luci-app-passwall=y
-          CONFIG_PACKAGE_luci-app-ttnode=y
+          # CONFIG_PACKAGE_luci-app-ttnode=y
           CONFIG_PACKAGE_adguardhome=y
           CONFIG_PACKAGE_luci-app-adguardhome=y
           CONFIG_PACKAGE_luci-app-ssr-plus=y
@@ -204,8 +204,9 @@ jobs:
           # CONFIG_PACKAGE_luci-app-oscam=y
           # CONFIG_PACKAGE_tvheadend=y
           CONFIG_PACKAGE_luci-app-serverchan=y
+          CONFIG_PACKAGE_luci-app-uugamebooster=n
           CONFIG_PACKAGE_luci-app-udpxy=y
-          CONFIG_PACKAGE_luci-app-uhttpd=y
+          # CONFIG_PACKAGE_luci-app-uhttpd=y
           # CONFIG_PACKAGE_luci-app-frpc=y
           # CONFIG_PACKAGE_luci-app-iptvhelper=y
           # CONFIG_PACKAGE_luci-app-nps=y
@@ -266,8 +267,8 @@ jobs:
       - name: Custom configuration
         run: |
           # 修改内核4.19
-          # sed -i 's/KERNEL_PATCHVER:=5.4/KERNEL_PATCHVER:=4.19/g' target/linux/x86/Makefile
-          # sed -i 's/KERNEL_TESTING_PATCHVER:=5.4/KERNEL_TESTING_PATCHVER:=4.19/g' target/linux/x86/Makefile
+          sed -i 's/KERNEL_PATCHVER:=5.4/KERNEL_PATCHVER:=4.19/g' target/linux/x86/Makefile
+          sed -i 's/KERNEL_TESTING_PATCHVER:=5.4/KERNEL_TESTING_PATCHVER:=4.19/g' target/linux/x86/Makefile
         
           # 修改openwrt登陆地址,把下面的192.168.6.1修改成你想要的就可以了
           sed -i 's/192.168.1.1/192.168.6.3/g' package/base-files/files/bin/config_generate
@@ -279,7 +280,7 @@ jobs:
           sed -i "s/OpenWrt /Lan build $(TZ=UTC-8 date "+%Y%m%d") @ OpenWrt /g" package/lean/default-settings/files/zzz-default-settings
        
           # 修改argon为默认主题,可根据你喜欢的修改成其他的（不选择那些会自动改变为默认主题的主题才有效果）
-          # sed -i 's/luci-theme-bootstrap/luci-theme-argon-lean/g' feeds/luci/collections/luci/Makefile
+          # sed -i 's/luci-theme-bootstrap/luci-theme-argon-leanimg/g' feeds/luci/collections/luci/Makefile
        
           # 修改插件名字（修改名字后不知道会不会对插件功能有影响，自己多测试）
           sed -i 's/"网络存储"/"存储"/g' package/lean/luci-app-vsftpd/po/zh-cn/vsftpd.po
@@ -330,7 +331,7 @@ jobs:
       - name: Deliver firmware
         uses: actions/upload-artifact@v2
         with:
-          name: OpenWrt_firmware_Tian5.4
+          name: OpenWrt_firmware_Tian4.19
           path: ./bin/targets/
 
       - name: Upload release asset

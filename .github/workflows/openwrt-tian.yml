@@ -7,7 +7,7 @@
 # <https://github.com/KFERMercer/OpenWrt-CI>
 #
 
-name: OpenWrt-Tian5.4
+name: OpenWrt-Tian
 
 on:
   workflow_dispatch:
@@ -205,7 +205,7 @@ jobs:
           # CONFIG_PACKAGE_tvheadend=y
           CONFIG_PACKAGE_luci-app-serverchan=y
           CONFIG_PACKAGE_luci-app-udpxy=y
-          CONFIG_PACKAGE_luci-app-uhttpd=y
+          # CONFIG_PACKAGE_luci-app-uhttpd=y
           # CONFIG_PACKAGE_luci-app-frpc=y
           # CONFIG_PACKAGE_luci-app-iptvhelper=y
           # CONFIG_PACKAGE_luci-app-nps=y
@@ -223,7 +223,7 @@ jobs:
           # CONFIG_PACKAGE_luci-app-qbittorrent=y
           CONFIG_PACKAGE_luci-app-pptp-vpnserver=y
           CONFIG_PACKAGE_luci-app-openvpn-server=y
-          CONFIG_PACKAGE_luci-app-eqos=y
+          # CONFIG_PACKAGE_luci-app-eqos=y
           CONFIG_PACKAGE_luci-app-oaf=y
           CONFIG_PACKAGE_luci-app-syncdial=y
           CONFIG_PACKAGE_luci-app-wrtbwmon=y
@@ -233,7 +233,7 @@ jobs:
           cat >> .config <<EOF
           # CONFIG_PACKAGE_luci-theme-argon=y
           # CONFIG_PACKAGE_luci-theme-netgear=y
-          CONFIG_PACKAGE_luci-theme-argon-leanimg=y
+          CONFIG_PACKAGE_luci-theme-argon-lean=y
           CONFIG_PACKAGE_luci-theme-edge=y
           # CONFIG_PACKAGE_luci-theme-infinityfreedom=y
           EOF
@@ -270,7 +270,7 @@ jobs:
           # sed -i 's/KERNEL_TESTING_PATCHVER:=5.4/KERNEL_TESTING_PATCHVER:=4.19/g' target/linux/x86/Makefile
         
           # 修改openwrt登陆地址,把下面的192.168.6.1修改成你想要的就可以了
-          sed -i 's/192.168.1.1/192.168.6.3/g' package/base-files/files/bin/config_generate
+          sed -i 's/192.168.1.1/192.168.18.3/g' package/base-files/files/bin/config_generate
        
           # 修改主机名字，把OpenWrt-1.0修改你喜欢的就行（不能纯数字或者使用中文）
           # sed -i '/uci commit system/i\uci set system.@system[0].hostname='OpenWrt-1.0'' package/lean/default-settings/files/zzz-default-settings

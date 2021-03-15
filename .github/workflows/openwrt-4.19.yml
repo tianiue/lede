@@ -1,0 +1,409 @@
+#=================================================
+# https://github.com/P3TERX/Actions-OpenWrt
+# Description: Build OpenWrt using GitHub Actions
+# Lisence: MIT
+# Author: P3TERX
+# Blog: https://p3terx.com
+#=================================================
+
+name: OpenWrt-LEDE4.19
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 22 5,15,25 * *
+  # release:
+    # types: [published]
+
+env:
+  UPLOAD_BIN_DIR: true
+  UPLOAD_FIRMWARE: true
+  UPLOAD_COWTRANSFER: true
+  UPLOAD_WETRANSFER: true
+  UPLOAD_RELEASE: true
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 检查项目分支
+      uses: actions/checkout@main
+
+    - name: 安装编译环境
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install $(curl -fsSL git.io/depends-ubuntu-latest)
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+
+    - name: 下载固件源码
+      working-directory: /workdir
+      run: |
+        df -hT $PWD
+        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        
+    - name: 加载自定义设置
+      run: |
+       cd package
+       mkdir openwrt-packages
+       cd openwrt-packages
+       git clone https://github.com/tianiue/luci-packages.git
+       git clone https://github.com/xiaorouji/openwrt-passwall.git
+       git clone https://github.com/fw876/helloworld.git
+       git clone https://github.com/vernesong/OpenClash.git
+       # git clone https://github.com/frainzy1477/luci-app-clash.git
+       git clone https://github.com/destan19/OpenAppFilter.git
+       # git clone https://github.com/jerrykuku/luci-app-ttnode.git
+       git clone https://github.com/linkease/ddnsto-openwrt.git
+       # git clone https://github.com/jerrykuku/luci-app-vssr.git
+       # git clone https://github.com/jerrykuku/lua-maxminddb.git
+       # git clone https://github.com/lisaac/luci-app-dockerman.git
+       # git clone https://github.com/lisaac/luci-lib-docker.git
+
+    - name: 下载插件
+      run: ./scripts/feeds update -a
+
+    - name: 读取插件
+      run: ./scripts/feeds install -a
+
+    - name: 固件定制
+      run: |
+          rm -f ./.config*
+          touch ./.config
+
+          #
+          # ========================固件定制部分========================
+          # 
+
+          # 
+          # 如果不对本区块做出任何编辑, 则生成默认配置固件. 
+          # 
+
+          # 以下为定制化固件选项和说明:
+          #
+
+          #
+          # 有些插件/选项是默认开启的, 如果想要关闭, 请参照以下示例进行编写:
+          # 
+          #          =========================================
+          #         |  # 取消编译VMware镜像:                   |
+          #         |  cat >> .config <<EOF                   |
+          #         |  # CONFIG_VMDK_IMAGES is not set        |
+          #         |  EOF                                    |
+          #          =========================================
+          #
+
+          # 
+          # 以下是一些提前准备好的一些插件选项.
+          # 直接取消注释相应代码块即可应用. 不要取消注释代码块上的汉字说明.
+          # 如果不需要代码块里的某一项配置, 只需要删除相应行.
+          #
+          # 如果需要其他插件, 请按照示例自行添加.
+          # 注意, 只需添加依赖链顶端的包. 如果你需要插件 A, 同时 A 依赖 B, 即只需要添加 A.
+          # 
+          # 无论你想要对固件进行怎样的定制, 都需要且只需要修改 EOF 回环内的内容.
+          # 
+
+          # 编译x64固件:
+          cat >> .config <<EOF
+          CONFIG_TARGET_x86=y
+          CONFIG_TARGET_x86_64=y
+          CONFIG_TARGET_x86_64_DEVICE_generic=y
+          CONFIG_TARGET_ROOTFS_TARGZ=y
+          CONFIG_TARGET_ROOTFS_SQUASHFS=y
+          EOF
+
+          # 固件压缩:
+          cat >> .config <<EOF
+          CONFIG_TARGET_IMAGES_GZIP=y
+          EOF
+
+          # 设置固件大小:
+          cat >> .config <<EOF
+          CONFIG_TARGET_KERNEL_PARTSIZE=32
+          CONFIG_TARGET_ROOTFS_PARTSIZE=467
+          EOF
+
+          # 编译UEFI固件:
+          cat >> .config <<EOF
+          CONFIG_EFI_IMAGES=y
+          EOF
+
+          # IPv6支持:
+          cat >> .config <<EOF
+          CONFIG_PACKAGE_dnsmasq_full_dhcpv6=y
+          CONFIG_PACKAGE_ipv6helper=y
+          EOF
+
+          # 多文件系统支持:
+          cat >> .config <<EOF
+          CONFIG_PACKAGE_kmod-fs-f2fs=y
+          CONFIG_PACKAGE_kmod-fs-nfs=y
+          CONFIG_PACKAGE_kmod-fs-nfs-common=y
+          CONFIG_PACKAGE_kmod-fs-nfs-common-rpcsec=y
+          CONFIG_PACKAGE_kmod-fs-nfs-v3=y
+          CONFIG_PACKAGE_kmod-fs-nfs-v4=y
+          CONFIG_PACKAGE_kmod-fs-nfsd=y
+          CONFIG_PACKAGE_kmod-fs-squashfs=y
+          EOF
+
+          # USB设备支持:
+          cat >> .config <<EOF
+          CONFIG_PACKAGE_kmod-usb-ehci=y
+          CONFIG_PACKAGE_kmod-usb-net-aqc111=y
+          CONFIG_PACKAGE_kmod-usb-net-pl=y
+          CONFIG_PACKAGE_kmod-usb-ohci=y
+          CONFIG_PACKAGE_kmod-usb-ohci-pci=y
+          CONFIG_PACKAGE_kmod-usb-printer=y
+          CONFIG_PACKAGE_kmod-usb-serial=y
+          CONFIG_PACKAGE_kmod-usb-uhci=y
+          CONFIG_PACKAGE_kmod-usb-wdm=y
+          CONFIG_PACKAGE_kmod-usb2=y
+          CONFIG_PACKAGE_kmod-usb2-pci=y
+          CONFIG_PACKAGE_kmod-usb3=y
+          EOF
+
+          # 常用LuCI插件选择:
+          cat >> .config <<EOF
+          CONFIG_PACKAGE_netdata=y
+          CONFIG_PACKAGE_luci-app-netdata-zh=y
+          CONFIG_PACKAGE_luci-app-webadmin=y
+          CONFIG_PACKAGE_luci-app-ttyd=y
+          CONFIG_PACKAGE_luci-app-diskman=y
+          CONFIG_PACKAGE_luci-app-autoreboot=n
+          CONFIG_PACKAGE_luci-app-autopoweroff=y
+          # CONFIG_PACKAGE_luci-app-argon-config=y
+          # CONFIG_PACKAGE_luci-app-vssr=y
+          # CONFIG_PACKAGE_lua-maxminddb=y
+          CONFIG_PACKAGE_luci-app-passwall=y
+          # CONFIG_PACKAGE_luci-app-ttnode=y
+          CONFIG_PACKAGE_adguardhome=y
+          CONFIG_PACKAGE_luci-app-adguardhome=y
+          CONFIG_PACKAGE_luci-app-ssr-plus=y
+          CONFIG_PACKAGE_luci-app-jd-dailybonus=y
+          CONFIG_PACKAGE_ddnsto=y
+          CONFIG_PACKAGE_luci-app-ddnsto=y
+          # CONFIG_PACKAGE_luci-app-clash=y
+          CONFIG_PACKAGE_luci-app-openclash=y
+          CONFIG_PACKAGE_smartdns=y
+          CONFIG_PACKAGE_luci-app-smartdns=y
+          # CONFIG_PACKAGE_oscam=y
+          # CONFIG_PACKAGE_luci-app-oscam=y
+          # CONFIG_PACKAGE_tvheadend=y
+          CONFIG_PACKAGE_luci-app-serverchan=y
+          CONFIG_PACKAGE_luci-app-udpxy=y
+          CONFIG_PACKAGE_luci-app-uhttpd=y
+          # CONFIG_PACKAGE_luci-app-frpc=y
+          # CONFIG_PACKAGE_luci-app-iptvhelper=y
+          # CONFIG_PACKAGE_luci-app-nps=y
+          # CONFIG_PACKAGE_luci-lib-docker=y
+          # CONFIG_PACKAGE_luci-app-dockerman=y
+          CONFIG_PACKAGE_luci-app-mwan3helper=y
+          # CONFIG_PACKAGE_luci-app-kodexplorer=y
+          # CONFIG_PACKAGE_luci-app-nfs=y
+          # CONFIG_PACKAGE_luci-app-verysync=y
+          CONFIG_PACKAGE_luci-app-usb-printer=y
+          CONFIG_PACKAGE_luci-app-baidupcs-web=y
+          # CONFIG_PACKAGE_luci-app-hd-idle=y
+          # CONFIG_PACKAGE_luci-app-minidlna=y
+          # CONFIG_PACKAGE_qBittorrent=y
+          # CONFIG_PACKAGE_luci-app-qbittorrent=y
+          CONFIG_PACKAGE_luci-app-pptp-vpnserver=y
+          CONFIG_PACKAGE_luci-app-openvpn-server=y
+          CONFIG_PACKAGE_luci-app-eqos=y
+          CONFIG_PACKAGE_luci-app-oaf=y
+          CONFIG_PACKAGE_luci-app-syncdial=y
+          CONFIG_PACKAGE_luci-app-wrtbwmon=y
+          EOF
+
+          # LuCI主题:
+          cat >> .config <<EOF
+          # CONFIG_PACKAGE_luci-theme-argon=y
+          # CONFIG_PACKAGE_luci-theme-netgear=y
+          # CONFIG_PACKAGE_luci-theme-argon-leanimg=y
+          CONFIG_PACKAGE_luci-theme-edge=y
+          # CONFIG_PACKAGE_luci-theme-infinityfreedom=y
+          EOF
+
+          # 常用软件包:
+          cat >> .config <<EOF
+          CONFIG_PACKAGE_curl=y
+          CONFIG_PACKAGE_htop=y
+          CONFIG_PACKAGE_iperf3=y
+          CONFIG_PACKAGE_nano=y
+          CONFIG_PACKAGE_screen=y
+          CONFIG_PACKAGE_tree=y
+          CONFIG_PACKAGE_vim-fuller=y
+          CONFIG_PACKAGE_wget=y
+          EOF
+
+          # 取消编译VMware镜像以及镜像填充 (不要删除被缩进的注释符号):
+          cat >> .config <<EOF
+          # CONFIG_TARGET_IMAGES_PAD is not set
+          CONFIG_VMDK_IMAGES=y
+          EOF
+
+          # 
+          # ========================固件定制部分结束========================
+          # 
+
+          sed -i 's/^[ \t]*//g' ./.config
+          make defconfig
+
+    - name: 修改自定义配置
+      run: |
+        # 修改内核4.19
+        sed -i 's/KERNEL_PATCHVER:=5.4/KERNEL_PATCHVER:=4.19/g' target/linux/x86/Makefile
+        sed -i 's/KERNEL_TESTING_PATCHVER:=5.4/KERNEL_TESTING_PATCHVER:=4.19/g' target/linux/x86/Makefile
+        
+        # 修改openwrt登陆地址,把下面的192.168.6.1修改成你想要的就可以了
+        sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generate
+       
+        # 修改主机名字，把OpenWrt-1.0修改你喜欢的就行（不能纯数字或者使用中文）
+        # sed -i '/uci commit system/i\uci set system.@system[0].hostname='OpenWrt-1.0'' package/lean/default-settings/files/zzz-default-settings
+       
+        # 版本号里显示一个自己的名字（Lan build $(TZ=UTC-8 date "+%Y.%m.%d") @ 这些都是后增加的）
+        sed -i "s/OpenWrt /Stable build $(TZ=UTC-8 date "+%Y%m%d") @ OpenWrt /g" package/lean/default-settings/files/zzz-default-settings
+       
+        # 修改argon为默认主题,可根据你喜欢的修改成其他的（不选择那些会自动改变为默认主题的主题才有效果）
+        # sed -i 's/luci-theme-bootstrap/luci-theme-edge/g' feeds/luci/collections/luci/Makefile
+       
+        # 设置密码为空（安装固件时无需密码登陆，然后自己修改想要的密码）
+        # sed -i 's@.*CYXluq4wUazHjmCDBCqXF*@#&@g' package/lean/default-settings/files/zzz-default-settings
+       
+        # 修改插件名字（修改名字后不知道会不会对插件功能有影响，自己多测试）
+        sed -i 's/"网络存储"/"存储"/g' package/lean/luci-app-vsftpd/po/zh-cn/vsftpd.po
+        sed -i 's/"网络存储"/"存储"/g' package/lean/luci-app-usb-printer/po/zh-cn/usb-printer.po
+        sed -i 's/"BaiduPCS Web"/"百度网盘"/g' package/lean/luci-app-baidupcs-web/luasrc/controller/baidupcs-web.lua
+        sed -i 's/"带宽监控"/"带宽"/g' feeds/luci/applications/luci-app-nlbwmon/po/zh-cn/nlbwmon.po
+        sed -i 's/"实时流量监测"/"流量"/g' package/lean/luci-app-wrtbwmon/po/zh-cn/wrtbwmon.po
+
+    - name: 下载安装包
+      id: package
+      run: |
+        make defconfig
+        make download -j8
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+
+    - name: 开始编译固件
+      id: compile
+      run: |
+        echo -e "$(nproc) thread compile"
+        curl https://sc.ftqq.com/${{ secrets.SCKEY }}.send?text=开始编译OpenWrt-4.19内核固件&desp=${{ env.DEVICE_NAME }}
+        make -j$(nproc) || make -j1 || make -j1 V=s
+        echo "::set-output name=status::success"
+        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
+        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
+        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+        echo "FILE_TIME=$(date "+%Y年%m月%d日-%H点")" >> $GITHUB_ENV
+
+    - name: 查看磁盘使用情况
+      if: (!cancelled())
+      run: df -hT
+
+    - name: 上传bin压缩目录
+      uses: actions/upload-artifact@main
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      with:
+        name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        path: bin/packages/x86_64
+
+    - name: 整理编译好的固件
+      id: organize
+      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      run: |
+        cd bin/targets/*/*
+        rm -rf packages && mkdir packages
+        find -name "*esxi-flat.vmdk*" | xargs -i mv -f {} packages
+        find -name "*kernel.bin*" | xargs -i mv -f {} packages
+        find -name "*rootfs*" | xargs -i mv -f {} packages
+        find -name "*.manifest*" | xargs -i mv -f {} packages
+        find -name "*vmlinuz*" | xargs -i mv -f {} packages
+        find -name "*esxi.vmdk*" | xargs -i mv -f {} packages
+        rm -rf packages
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "::set-output name=status::success"
+
+    - name: 上传固件到github
+      uses: actions/upload-artifact@main
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: OpenWrt_4.19${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        path: ${{ env.FIRMWARE }}
+
+    - name: 上传固件到NN网盘
+      id: cowtransfer
+      if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
+      run: |
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer cow --block 2621440 -s -p 64 --no-progress ${FIRMWARE} 2>&1 | tee cowtransfer.log
+        echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
+        echo "::set-output name=url::$(cat cowtransfer.log | grep https | cut -f3 -d" ")"
+
+    - name: 上传固件到WT网盘
+      id: wetransfer
+      if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
+      run: |
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer wet -s -p 16 --no-progress ${FIRMWARE} 2>&1 | tee wetransfer.log
+        echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
+        echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
+        
+    - name: 创建release标签
+      id: tag
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      run: |
+        echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
+        touch release.txt
+        echo "[固件源码](https://github.com/coolsnowwolf/lede)" >> release.txt
+        echo "由衷感谢所有为openwrt无私奉献的大佬们" >> release.txt
+        echo "📥 固件下载" >> release.txt
+        [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [国内NN网盘](${{ steps.cowtransfer.outputs.url }})" >> release.txt
+        [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [国外WT网盘](${{ steps.wetransfer.outputs.url }})" >> release.txt
+        echo "::set-output name=status::success"
+        
+    - name: 发布至release
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE1_TOKEN }}
+      with:
+        name: ${{ env.FILE_TIME }} 「 OpenWrt-LEDE4.19-X86-64 」
+        tag_name: ${{ steps.tag.outputs.release_tag }}
+        body_path: release.txt
+        files: ${{ env.FIRMWARE }}/*
+
+    - name: 删除旧的Releases
+      uses: dev-drprasad/delete-older-releases@v0.1.0
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      with:
+        keep_latest: 18
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE1_TOKEN }}
+
+    - name: 微信报告
+      uses: emon100/Action-Serverchan@master
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        SCKEY: ${{ secrets.SCKEY }}
+        text: 恭喜主人OpenWrt-4.19内核固件编译成功！
+        desp: 我亲爱的主人您要编译的固件成功完成了！
+              
+              
+              奶牛快传：${{ steps.cowtransfer.outputs.url }}
+              
+              
+              WeTransfer：${{ steps.wetransfer.outputs.url }}
+              
+              
+              Have a nice day.

@@ -7,7 +7,7 @@
 # <https://github.com/KFERMercer/OpenWrt-CI>
 #
 
-name: OpenWrt-Tian5.4
+name: OpenWrt-AC2100
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
 
   build_openwrt:
 
-    name: Build OpenWrt firmware Tian
+    name: Build OpenWrt firmware AC2100
 
     runs-on: ubuntu-latest
 
@@ -64,11 +64,11 @@ jobs:
           git clone https://github.com/tianiue/luci-packages.git
           git clone https://github.com/xiaorouji/openwrt-passwall.git
           git clone https://github.com/fw876/helloworld.git
-          git clone https://github.com/vernesong/OpenClash.git
+          # git clone https://github.com/vernesong/OpenClash.git
           # git clone https://github.com/frainzy1477/luci-app-clash.git
           git clone https://github.com/destan19/OpenAppFilter.git
-          git clone https://github.com/jerrykuku/luci-app-ttnode.git
-          git clone https://github.com/linkease/ddnsto-openwrt.git
+          # git clone https://github.com/jerrykuku/luci-app-ttnode.git
+          # git clone https://github.com/linkease/ddnsto-openwrt.git
           # git clone https://github.com/jerrykuku/luci-app-vssr.git
           # git clone https://github.com/jerrykuku/lua-maxminddb.git
           # git clone https://github.com/lisaac/luci-app-dockerman.git
@@ -117,29 +117,17 @@ jobs:
           # 无论你想要对固件进行怎样的定制, 都需要且只需要修改 EOF 回环内的内容.
           # 
 
-          # 编译x64固件:
+          # 编译ARM固件:
           cat >> .config <<EOF
-          CONFIG_TARGET_x86=y
-          CONFIG_TARGET_x86_64=y
-          CONFIG_TARGET_x86_64_DEVICE_generic=y
-          CONFIG_TARGET_ROOTFS_TARGZ=y
-          CONFIG_TARGET_ROOTFS_SQUASHFS=y
+          CONFIG_TARGET_ramips=y
+          CONFIG_TARGET_ramips_mt7621=y
+          CONFIG_TARGET_ramips_mt7621_DEVICE_xiaomi_redmi-router-ac2100=y
+          # CONFIG_TARGET_ramips_mt7621_DEVICE_xiaomi_mi-router-ac2100=y
           EOF
 
           # 固件压缩:
           cat >> .config <<EOF
           CONFIG_TARGET_IMAGES_GZIP=y
-          EOF
-
-          # 设置固件大小:
-          cat >> .config <<EOF
-          CONFIG_TARGET_KERNEL_PARTSIZE=32
-          CONFIG_TARGET_ROOTFS_PARTSIZE=467
-          EOF
-
-          # 编译UEFI固件:
-          cat >> .config <<EOF
-          CONFIG_EFI_IMAGES=y
           EOF
 
           # IPv6支持:
@@ -163,68 +151,81 @@ jobs:
           # USB设备支持:
           cat >> .config <<EOF
           CONFIG_PACKAGE_kmod-usb-ehci=y
-          CONFIG_PACKAGE_kmod-usb-net-aqc111=y
-          CONFIG_PACKAGE_kmod-usb-net-pl=y
-          CONFIG_PACKAGE_kmod-usb-ohci=y
-          CONFIG_PACKAGE_kmod-usb-ohci-pci=y
-          CONFIG_PACKAGE_kmod-usb-printer=y
-          CONFIG_PACKAGE_kmod-usb-serial=y
-          CONFIG_PACKAGE_kmod-usb-uhci=y
-          CONFIG_PACKAGE_kmod-usb-wdm=y
+          # CONFIG_PACKAGE_kmod-usb-net-aqc111=y
+          # CONFIG_PACKAGE_kmod-usb-net-pl=y
+          # CONFIG_PACKAGE_kmod-usb-ohci=y
+          # CONFIG_PACKAGE_kmod-usb-ohci-pci=y
+          # CONFIG_PACKAGE_kmod-usb-printer=y
+          # CONFIG_PACKAGE_kmod-usb-serial=y
+          # CONFIG_PACKAGE_kmod-usb-uhci=y
+          # CONFIG_PACKAGE_kmod-usb-wdm=y
           CONFIG_PACKAGE_kmod-usb2=y
-          CONFIG_PACKAGE_kmod-usb2-pci=y
-          CONFIG_PACKAGE_kmod-usb3=y
+          # CONFIG_PACKAGE_kmod-usb2-pci=y
+          # CONFIG_PACKAGE_kmod-usb3=y
+          EOF
+
+          # WiFi网卡驱动:
+          cat >> .config <<EOF
+          CONFIG_DEFAULT_kmod-mt7603e=y
+          CONFIG_DEFAULT_kmod-mt7615d=y
           EOF
 
           # 常用LuCI插件选择:
           cat >> .config <<EOF
-          CONFIG_PACKAGE_netdata=y
-          CONFIG_PACKAGE_luci-app-netdata-zh=y
+          # CONFIG_PACKAGE_netdata=y
+          # CONFIG_PACKAGE_luci-app-netdata-zh=y
           CONFIG_PACKAGE_luci-app-webadmin=y
           CONFIG_PACKAGE_luci-app-ttyd=y
-          CONFIG_PACKAGE_luci-app-diskman=y
+          # CONFIG_PACKAGE_luci-app-diskman=y
           CONFIG_PACKAGE_luci-app-autoreboot=n
           CONFIG_PACKAGE_luci-app-autopoweroff=y
           CONFIG_PACKAGE_luci-app-argon-config=y
           # CONFIG_PACKAGE_luci-app-vssr=y
           # CONFIG_PACKAGE_lua-maxminddb=y
-          CONFIG_PACKAGE_luci-app-passwall=y
-          CONFIG_PACKAGE_luci-app-ttnode=y
-          CONFIG_PACKAGE_adguardhome=y
-          CONFIG_PACKAGE_luci-app-adguardhome=y
+          # CONFIG_PACKAGE_luci-app-passwall=y
+          CONFIG_PACKAGE_luci-app-adbyby-plus=y
+          # CONFIG_PACKAGE_luci-app-ttnode=y
+          # CONFIG_PACKAGE_adguardhome=y
+          # CONFIG_PACKAGE_luci-app-adguardhome=y
           CONFIG_PACKAGE_luci-app-ssr-plus=y
+          CONFIG_PACKAGE_xray-core=y
           CONFIG_PACKAGE_luci-app-jd-dailybonus=y
-          CONFIG_PACKAGE_ddnsto=y
-          CONFIG_PACKAGE_luci-app-ddnsto=y
-          # CONFIG_PACKAGE_luci-app-clash=y
-          CONFIG_PACKAGE_luci-app-openclash=y
+          # CONFIG_PACKAGE_ddnsto=y
+          # CONFIG_PACKAGE_luci-app-ddnsto=y
+          # CONFIG_PACKAGE_luci-app-openclash=y
           CONFIG_PACKAGE_smartdns=y
           CONFIG_PACKAGE_luci-app-smartdns=y
-          # CONFIG_PACKAGE_oscam=y
           # CONFIG_PACKAGE_luci-app-oscam=y
-          # CONFIG_PACKAGE_tvheadend=y
-          CONFIG_PACKAGE_luci-app-serverchan=y
+          # CONFIG_PACKAGE_oscam=y
+          # CONFIG_PACKAGE_luci-app-serverchan=y
+          CONFIG_PACKAGE_UnblockNeteaseMusic=y
+          CONFIG_PACKAGE_UnblockNeteaseMusicGo=y
+          # CONFIG_PACKAGE_luci-app-uugamebooster=y
           CONFIG_PACKAGE_luci-app-udpxy=y
-          CONFIG_PACKAGE_luci-app-uhttpd=y
           # CONFIG_PACKAGE_luci-app-frpc=y
-          # CONFIG_PACKAGE_luci-app-iptvhelper=y
+          CONFIG_PACKAGE_luci-app-uhttpd=y
+          CONFIG_PACKAGE_luci-app-xlnetacc=n
           # CONFIG_PACKAGE_luci-app-nps=y
           # CONFIG_PACKAGE_luci-lib-docker=y
-          # CONFIG_PACKAGE_luci-app-dockerman=y
+          # CONFIG_PACKAGE_luci-app-docker=y
           CONFIG_PACKAGE_luci-app-mwan3helper=y
           # CONFIG_PACKAGE_luci-app-kodexplorer=y
           # CONFIG_PACKAGE_luci-app-nfs=y
           # CONFIG_PACKAGE_luci-app-verysync=y
-          CONFIG_PACKAGE_luci-app-usb-printer=y
-          # CONFIG_PACKAGE_luci-app-baidupcs-web=y
+          CONFIG_PACKAGE_luci-app-vsftpd=n
+          # CONFIG_PACKAGE_luci-app-usb-printer=y
           # CONFIG_PACKAGE_luci-app-hd-idle=y
           # CONFIG_PACKAGE_luci-app-minidlna=y
           # CONFIG_PACKAGE_qBittorrent=y
           # CONFIG_PACKAGE_luci-app-qbittorrent=y
-          CONFIG_PACKAGE_luci-app-pptp-vpnserver=y
-          CONFIG_PACKAGE_luci-app-openvpn-server=y
+          CONFIG_PACKAGE_luci-app-samba=n
+          # CONFIG_PACKAGE_luci-app-pptp-vpnserver=y
+          # CONFIG_PACKAGE_luci-app-openvpn-server=y
+          CONFIG_PACKAGE_luci-app-zerotier=y
           CONFIG_PACKAGE_luci-app-eqos=y
-          CONFIG_PACKAGE_luci-app-oaf=y
+          # CONFIG_PACKAGE_luci-app-oaf=y
+          CONFIG_DEFAULT_luci-app-mtwifi=y
+          CONFIG_PACKAGE_luci-app-guest-wifi=y
           CONFIG_PACKAGE_luci-app-syncdial=y
           CONFIG_PACKAGE_luci-app-wrtbwmon=y
           EOF
@@ -234,7 +235,7 @@ jobs:
           # CONFIG_PACKAGE_luci-theme-argon=y
           # CONFIG_PACKAGE_luci-theme-netgear=y
           CONFIG_PACKAGE_luci-theme-argon-leanimg=y
-          CONFIG_PACKAGE_luci-theme-edge=y
+          # CONFIG_PACKAGE_luci-theme-edge=y
           # CONFIG_PACKAGE_luci-theme-infinityfreedom=y
           EOF
 
@@ -242,7 +243,7 @@ jobs:
           cat >> .config <<EOF
           CONFIG_PACKAGE_curl=y
           CONFIG_PACKAGE_htop=y
-          CONFIG_PACKAGE_iperf3=y
+          # CONFIG_PACKAGE_iperf3=y
           CONFIG_PACKAGE_nano=y
           CONFIG_PACKAGE_screen=y
           CONFIG_PACKAGE_tree=y
@@ -268,23 +269,25 @@ jobs:
           # 修改内核4.19
           # sed -i 's/KERNEL_PATCHVER:=5.4/KERNEL_PATCHVER:=4.19/g' target/linux/x86/Makefile
           # sed -i 's/KERNEL_TESTING_PATCHVER:=5.4/KERNEL_TESTING_PATCHVER:=4.19/g' target/linux/x86/Makefile
-        
+          
           # 修改openwrt登陆地址,把下面的192.168.6.1修改成你想要的就可以了
-          sed -i 's/192.168.1.1/192.168.6.3/g' package/base-files/files/bin/config_generate
-       
+          sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generate
+          
           # 修改主机名字，把OpenWrt-1.0修改你喜欢的就行（不能纯数字或者使用中文）
-          # sed -i '/uci commit system/i\uci set system.@system[0].hostname='OpenWrt-1.0'' package/lean/default-settings/files/zzz-default-settings
-       
+          sed -i '/uci commit system/i\uci set system.@system[0].hostname='MiRouter'' package/lean/default-settings/files/zzz-default-settings
+          
           # 版本号里显示一个自己的名字（Lan build $(TZ=UTC-8 date "+%Y.%m.%d") @ 这些都是后增加的）
-          sed -i "s/OpenWrt /Lan build $(TZ=UTC-8 date "+%Y%m%d") @ OpenWrt /g" package/lean/default-settings/files/zzz-default-settings
-       
+          sed -i "s/OpenWrt /RM build $(TZ=UTC-8 date "+%Y%m%d") @ OpenWrt /g" package/lean/default-settings/files/zzz-default-settings
+          
           # 修改argon为默认主题,可根据你喜欢的修改成其他的（不选择那些会自动改变为默认主题的主题才有效果）
-          # sed -i 's/luci-theme-bootstrap/luci-theme-argon-lean/g' feeds/luci/collections/luci/Makefile
-       
+          # sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
+          
+          # 设置密码为空（安装固件时无需密码登陆，然后自己修改想要的密码）
+          # sed -i 's@.*CYXluq4wUazHjmCDBCqXF*@#&@g' package/lean/default-settings/files/zzz-default-settings
+          
           # 修改插件名字（修改名字后不知道会不会对插件功能有影响，自己多测试）
-          sed -i 's/"网络存储"/"存储"/g' package/lean/luci-app-vsftpd/po/zh-cn/vsftpd.po
-          sed -i 's/"网络存储"/"存储"/g' package/lean/luci-app-usb-printer/po/zh-cn/usb-printer.po
-          # sed -i 's/"BaiduPCS Web"/"百度网盘"/g' package/lean/luci-app-baidupcs-web/luasrc/controller/baidupcs-web.lua
+          # sed -i 's/"网络存储"/"存储"/g' package/lean/luci-app-vsftpd/po/zh-cn/vsftpd.po
+          # sed -i 's/"网络存储"/"存储"/g' package/lean/luci-app-usb-printer/po/zh-cn/usb-printer.po
           sed -i 's/"带宽监控"/"带宽"/g' feeds/luci/applications/luci-app-nlbwmon/po/zh-cn/nlbwmon.po
           sed -i 's/"实时流量监测"/"流量"/g' package/lean/luci-app-wrtbwmon/po/zh-cn/wrtbwmon.po
 
@@ -330,7 +333,7 @@ jobs:
       - name: Deliver firmware
         uses: actions/upload-artifact@v2
         with:
-          name: OpenWrt_firmware_Tian5.4
+          name: OpenWrt_firmware_AC2100
           path: ./bin/targets/
 
       - name: Upload release asset
