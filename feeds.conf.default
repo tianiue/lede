@@ -2,7 +2,10 @@ src-git packages https://github.com/coolsnowwolf/packages
 src-git luci https://github.com/coolsnowwolf/luci
 src-git routing https://github.com/coolsnowwolf/routing
 src-git telephony https://git.openwrt.org/feed/telephony.git
-#src-git helloworld https://github.com/fw876/helloworld.git
+src-git helloworld https://github.com/fw876/helloworld.git
+src-git luci-packages https://github.com/tianiue/luci-packages.git
+src-git openwrt-passwall https://github.com/xiaorouji/openwrt-passwall.git
+src-git OpenClash https://github.com/vernesong/OpenClash.git
 #src-git oui https://github.com/zhaojh329/oui.git
 #src-git video https://github.com/openwrt/video.git
 #src-git targets https://github.com/openwrt/targets.git
